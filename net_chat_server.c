@@ -117,8 +117,9 @@ int main() {
 				return -1;
 			}
 
-			struct client_info *new_client = (struct client_info *)malloc(sizeof(*new_client));
-			new_client->fd = client_fd;
+		struct client_info *new_client = (struct client_info *)malloc(sizeof(*new_client));
+		new_client->fd = client_fd;
+		new_client->name[0] = '\0';//名字未设置
 
 			//添加到管理链表
 			if(0 > client_add_manager(new_client,manager)) {
@@ -166,16 +167,26 @@ int main() {
 							send(temp_client->fd, leave_info, strlen(leave_info), 0);
 						}
 					}
+		} else {
+				buffer[bytes] = '\0';//末尾补0
+				if(client->name[0] == '\0') {
+					// 第一条消息 → 当作用户名，去掉末尾\r\n
+					int len = bytes;
+					while(len > 0 && (buffer[len-1] == '\r' || buffer[len-1] == '\n')) len--;
+					buffer[len] = '\0';
+					strncpy(client->name, buffer, sizeof(client->name)-1);
+					client->name[sizeof(client->name)-1] = '\0';
+					printf("用户 [%s] 进入聊天室\r\n", client->name);
 				} else {
-					buffer[bytes] = '\0';//末尾补0
+					// 普通聊天消息 → 广播
 					printf("收到消息: %s\r\n",buffer);
-					//读取正常
 					manager_for_each_client_safe(temp_client,temp_n_client,manager->head,entry) {
 						if(temp_client != client) {//转发给不同客户
 							send(temp_client->fd,buffer,strlen(buffer),0);
 						}
 					}
 				}
+			}
 
 			}
 		}
