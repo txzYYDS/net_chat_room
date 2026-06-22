@@ -10,8 +10,8 @@ SRCDIR  = src
 INCDIR  = inc
 BUILDDIR = build
 
-# 源文件（根目录 main.c + src/ 下所有 .c）
-MAIN_SRC = main.c
+# 源文件（根目录 net_chat_server.c + src/ 下所有 .c）
+MAIN_SRC = net_chat_server.c
 SRCS     = $(wildcard $(SRCDIR)/*.c)
 OBJS     = $(patsubst %.c,$(BUILDDIR)/%.o,$(MAIN_SRC) $(SRCS))
 DEPS     = $(OBJS:.o=.d)
