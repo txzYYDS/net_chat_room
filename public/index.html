@@ -279,12 +279,136 @@
   #input-area button:active { transform: scale(0.94); }
   #input-area button svg { width: 22px; height: 22px; fill: #fff; }
 
+  /* 表情按钮 */
+  #emoji-btn {
+    background: rgba(255,255,255,0.05) !important;
+    font-size: 22px;
+    line-height: 1;
+  }
+  #emoji-btn:hover {
+    background: rgba(255,255,255,0.1) !important;
+  }
+
+  /* ========== 表情选择器 ========== */
+  #emoji-picker {
+    display: none;
+    position: absolute;
+    bottom: 80px;
+    left: 24px;
+    width: 360px;
+    max-width: calc(100% - 48px);
+    background: rgba(22,22,50,0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 18px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+    z-index: 10;
+    overflow: hidden;
+    animation: emojiSlideUp 0.25s ease;
+  }
+  #emoji-picker.show { display: block; }
+  @keyframes emojiSlideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* 分类标签 */
+  .emoji-cats {
+    display: flex;
+    overflow-x: auto;
+    padding: 10px 8px 6px;
+    gap: 2px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    scrollbar-width: none;
+  }
+  .emoji-cats::-webkit-scrollbar { display: none; }
+  .emoji-cat {
+    flex-shrink: 0;
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background 0.2s;
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.5);
+  }
+  .emoji-cat:hover { background: rgba(255,255,255,0.08); }
+  .emoji-cat.active {
+    background: rgba(99,102,241,0.3);
+    color: #fff;
+  }
+
+  /* 表情网格 */
+  .emoji-grid-wrap {
+    height: 220px;
+    overflow-y: auto;
+    padding: 4px 6px;
+  }
+  .emoji-grid-wrap::-webkit-scrollbar { width: 4px; }
+  .emoji-grid-wrap::-webkit-scrollbar-track { background: transparent; }
+  .emoji-grid-wrap::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.08);
+    border-radius: 8px;
+  }
+  .emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 2px;
+  }
+  .emoji-item {
+    aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+    user-select: none;
+    border: none;
+    background: transparent;
+    padding: 0;
+    line-height: 1;
+  }
+  .emoji-item:hover {
+    background: rgba(255,255,255,0.1);
+    transform: scale(1.3);
+  }
+  .emoji-item:active { transform: scale(0.9); }
+
+  /* 表情包分类标题 */
+  .emoji-section-title {
+    grid-column: 1 / -1;
+    font-size: 11px;
+    color: rgba(255,255,255,0.3);
+    padding: 8px 6px 4px;
+    text-align: left;
+  }
+
+  /* 纯表情消息 - 放大无气泡 */
+  .msg.emoji-only .bubble {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    font-size: 42px;
+    line-height: 1.2;
+    padding: 4px 0;
+    letter-spacing: 4px;
+  }
+
   /* ========== 响应式 ========== */
   @media (max-width: 600px) {
     #login-panel { width: 100%; padding: 32px 24px; }
     #chat-container { height: 100vh; max-height: 100vh; border-radius: 0; }
     .msg { max-width: 88%; }
     #input-area { padding: 12px 16px; }
+    #emoji-picker {
+      left: 8px;
+      width: calc(100% - 16px);
+      bottom: 72px;
+    }
+    .emoji-grid { grid-template-columns: repeat(7, 1fr); }
+    .msg.emoji-only .bubble { font-size: 32px; }
   }
 </style>
 </head>
@@ -319,10 +443,19 @@
   <div id="messages"></div>
 
   <div id="input-area">
+    <button id="emoji-btn" onclick="toggleEmojiPicker()" title="表情">😊</button>
     <input id="msg-input" type="text" placeholder="说点什么……" maxlength="500" autocomplete="off">
     <button id="send-btn" onclick="doSend()">
       <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
     </button>
+  </div>
+
+  <!-- 表情选择器 -->
+  <div id="emoji-picker">
+    <div class="emoji-cats" id="emoji-cats"></div>
+    <div class="emoji-grid-wrap">
+      <div class="emoji-grid" id="emoji-grid"></div>
+    </div>
   </div>
 </div>
 
@@ -330,6 +463,122 @@
   let ws = null;
   let myName = '';
   let myMode = 'login'; // 'login' | 'register'
+  let emojiPickerOpen = false;
+  let currentEmojiCat = 0;
+
+  // ========== 表情数据 ==========
+  const emojiCategories = [
+    { icon: '😀', name: '笑脸', emojis: [
+      '😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩',
+      '😘','😗','😚','😙','🥲','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐',
+      '🤨','😐','😑','😶','😏','😒','🙄','😬','😮‍💨','🤥','😌','😔','😪','🤤','😴','😷',
+      '🤒','🤕','🤢','🤮','🥴','😵','😵‍💫','🤯','🥳','🥺','😢','😭','😤','😠','😡','🤬'
+    ]},
+    { icon: '👍', name: '手势', emojis: [
+      '👍','👎','👏','🙌','👐','🤲','🤝','🙏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆',
+      '🖕','👇','☝️','💪','🤳','👌','🤌','🤏','✋','🤚','🖐️','🖖','👋','🤙','🦾','🦿'
+    ]},
+    { icon: '❤️', name: '爱心', emojis: [
+      '❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖',
+      '💘','💝','💟','♥️','🫶','💌','💋','🫂','💯','🔥','⭐','🌟','✨','💥','💫','💦','💨'
+    ]},
+    { icon: '🐱', name: '动物', emojis: [
+      '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐻‍❄️','🐨','🐯','🦁','🐮','🐷','🐸','🐵',
+      '🙈','🙉','🙊','🐒','🐔','🐧','🐦','🐤','🐣','🐥','🦆','🦅','🦉','🦇','🐺','🐗',
+      '🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🪰','🪲','🪳','🦟','🦗','🕷️','🦂','🐢'
+    ]},
+    { icon: '🍔', name: '食物', emojis: [
+      '🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍈','🍒','🍑','🥭','🍍','🥥','🥝',
+      '🍅','🍆','🥑','🥦','🥬','🥒','🌶️','🫑','🌽','🥕','🧄','🧅','🥔','🍠','🥐','🍞',
+      '🥖','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗','🍖','🦴','🌭','🍔','🍟','🍕'
+    ]},
+    { icon: '⚽', name: '活动', emojis: [
+      '⚽','🏀','🏈','⚾','🥎','🎾','🏐','🏉','🥏','🎱','🪀','🏓','🏸','🏒','🏑','🥍',
+      '🏏','⛳','🎣','🤿','🏹','🥊','🥋','🎽','🛹','🛼','🛷','⛸️','🥌','🎿','⛷️','🏂'
+    ]},
+    { icon: '🎉', name: '庆祝', emojis: [
+      '🎉','🎊','🎈','🎂','🎀','🎁','🎃','🎄','🎋','🎍','🎎','🎏','🎐','🎑','🧧','🪅',
+      '🎗️','🥇','🥈','🥉','🏆','🎖️','🏅','🎫','🎟️','🎪','🎭','🎨','🎬','🎤','🎧','🎼'
+    ]},
+    { icon: '💡', name: '物品', emojis: [
+      '💡','🔦','📖','📚','📓','📒','📔','📕','📗','📘','📙','✏️','🖊️','🖋️','✒️','📝',
+      '💻','🖥️','⌨️','🖱️','🖲️','💽','💾','💿','📀','📱','📲','☎️','📞','📟','📠','📺',
+      '🔋','🪫','🔌','⏰','🕰️','⌚','📡','🔭','🔬','🕯️','🪔','💵','💴','💶','💷','💰'
+    ]}
+  ];
+
+  // ========== 初始化表情选择器（分类标签只渲染一次） ==========
+  (function initEmojiPicker() {
+    var catsEl = document.getElementById('emoji-cats');
+    emojiCategories.forEach(function(cat, i) {
+      var btn = document.createElement('button');
+      btn.className = 'emoji-cat' + (i === 0 ? ' active' : '');
+      btn.textContent = cat.icon;
+      btn.title = cat.name;
+      btn.dataset.catIndex = i;
+      catsEl.appendChild(btn);
+    });
+    // 事件委托：分类点击只更新网格和激活态，不重建 DOM
+    catsEl.addEventListener('click', function(e) {
+      var btn = e.target.closest('.emoji-cat');
+      if (!btn) return;
+      e.stopPropagation();
+      currentEmojiCat = parseInt(btn.dataset.catIndex);
+      // 更新激活态
+      Array.from(catsEl.children).forEach(function(b, idx) {
+        b.className = 'emoji-cat' + (idx === currentEmojiCat ? ' active' : '');
+      });
+      // 只刷新网格
+      renderEmojiGrid();
+    });
+    // 初始渲染网格
+    renderEmojiGrid();
+  })();
+
+  function renderEmojiGrid() {
+    var gridEl = document.getElementById('emoji-grid');
+    var cat = emojiCategories[currentEmojiCat];
+    gridEl.innerHTML = '';
+    cat.emojis.forEach(function(emoji) {
+      var item = document.createElement('button');
+      item.className = 'emoji-item';
+      item.textContent = emoji;
+      item.addEventListener('click', function(e) {
+        e.stopPropagation();
+        insertEmoji(emoji);
+      });
+      gridEl.appendChild(item);
+    });
+  }
+
+  function toggleEmojiPicker() {
+    var picker = document.getElementById('emoji-picker');
+    emojiPickerOpen = !emojiPickerOpen;
+    if (emojiPickerOpen) {
+      picker.classList.add('show');
+    } else {
+      picker.classList.remove('show');
+    }
+  }
+
+  function closeEmojiPicker() {
+    emojiPickerOpen = false;
+    document.getElementById('emoji-picker').classList.remove('show');
+  }
+
+  function insertEmoji(emoji) {
+    var inp = document.getElementById('msg-input');
+    var start = inp.selectionStart || 0;
+    var end   = inp.selectionEnd || 0;
+    var before = inp.value.substring(0, start);
+    var after  = inp.value.substring(end);
+    inp.value = before + emoji + after;
+    // 光标移到插入后
+    var pos = start + emoji.length;
+    inp.setSelectionRange(pos, pos);
+    inp.focus();
+    closeEmojiPicker();
+  }
 
   // ========== 模式切换 ==========
   function switchMode(mode) {
@@ -445,6 +694,10 @@
     const div = document.createElement('div');
     div.className = 'msg ' + type;
 
+    // 检测是否为纯表情消息（仅包含 emoji 和空格）
+    var isEmojiOnly = /^[\s\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{200D}\u{FE0F}\u{20E3}\u{200D}\u{2640}\u{2642}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}]+$/u.test(text);
+    if (isEmojiOnly) div.classList.add('emoji-only');
+
     const sender = document.createElement('span');
     sender.className = 'sender';
     sender.textContent = name || '';
@@ -481,6 +734,20 @@
     // 聊天界面回车 → 发送
     if (e.key === 'Enter' && document.getElementById('chat-container').classList.contains('active')) {
       if (document.activeElement === document.getElementById('msg-input')) doSend();
+    }
+    // Esc 关闭表情选择器
+    if (e.key === 'Escape' && emojiPickerOpen) {
+      closeEmojiPicker();
+    }
+  });
+
+  // 点击外部关闭表情选择器
+  document.addEventListener('click', function(e) {
+    if (!emojiPickerOpen) return;
+    var picker = document.getElementById('emoji-picker');
+    var btn = document.getElementById('emoji-btn');
+    if (!picker.contains(e.target) && e.target !== btn) {
+      closeEmojiPicker();
     }
   });
 </script>

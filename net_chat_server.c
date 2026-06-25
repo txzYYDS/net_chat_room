@@ -42,17 +42,17 @@ int main() {
     	server_addr.sin_addr.s_addr = INADDR_ANY;
     
     	if (bind(server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-        	perror("bind");
+        	perror("bind failed\r\n");
         	return 1;
     	}
     
     	// 3. 监听
     	if (listen(server_fd, 5) < 0) {
-        	perror("listen");
+        	perror("listen failed\r\n");
         	return 1;
     	}
 
-	printf("原神...启动!!!!!!!!!!\r\n");
+	printf("Chat Room Init Successfully!\r\n");
 
 	
 	/*
@@ -128,7 +128,7 @@ int main() {
 				return -2;
 			}
 			//发送欢迎消息
-			char welcome[] = "眼睛瞎在电脑上!\r\n";
+			char welcome[] = "It `s a simple demo ,Just to chat!!!\r\n";
 			send(client_fd,welcome,strlen(welcome),0);
 		}
 		
