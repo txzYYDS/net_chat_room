@@ -11,7 +11,7 @@
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
                  'Microsoft YaHei', sans-serif;
-    background: linear-gradient(135deg, #0c0c1d 0%, #1a1a3e 50%, #0d0d2b 100%);
+    background: linear-gradient(135deg, #e8f5e9 0%, #fce4ec 25%, #e3f2fd 50%, #f3e5f5 75%, #fff8e1 100%);
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -19,96 +19,127 @@
     padding: 20px;
   }
 
-  /* 背景动画粒子 */
+  /* 背景：小清新柔光粒子 */
   body::before {
     content: '';
     position: fixed; inset: 0;
     background:
-      radial-gradient(ellipse at 20% 50%, rgba(72,52,212,0.12) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 20%, rgba(0,212,255,0.08) 0%, transparent 50%),
-      radial-gradient(ellipse at 50% 80%, rgba(255,0,128,0.06) 0%, transparent 50%);
+      radial-gradient(ellipse at 20% 50%, rgba(129,212,250,0.18) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(248,187,208,0.16) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, rgba(200,230,201,0.20) 0%, transparent 50%);
+    opacity: 0.85;
     pointer-events: none;
   }
 
-  /* ========== 登录面板 ========== */
+  /* ========== 月薪喵装饰 ========== */
+  .mooncat-deco {
+    position: fixed;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.45;
+    filter: drop-shadow(0 8px 24px rgba(244,143,177,0.15));
+  }
+  .mooncat-deco img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .mooncat-deco.left {
+    left: max(24px, calc(50% - 530px));
+    top: 50%;
+    transform: translateY(-50%);
+    width: 200px;
+    height: 200px;
+  }
+  .mooncat-deco.right {
+    right: max(24px, calc(50% - 530px));
+    top: 50%;
+    transform: translateY(-50%) scaleX(-1);
+    width: 200px;
+    height: 200px;
+  }
+
+  /* ========== 登录面板 — 马卡龙风格 ========== */
   #login-panel {
     position: relative; z-index: 1;
-    background: rgba(22,22,46,0.85);
-    backdrop-filter: blur(24px);
-    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,253,250,0.94);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(244,143,177,0.25);
     border-radius: 24px;
     padding: 48px 40px;
     width: 420px;
     text-align: center;
-    box-shadow: 0 32px 64px rgba(0,0,0,0.4);
+    box-shadow: 0 24px 56px rgba(244,143,177,0.18), 0 4px 16px rgba(0,0,0,0.06);
   }
   #login-panel h1 {
-    color: #e0e0ff;
+    color: #d4687c;
     font-size: 28px;
     font-weight: 700;
     margin-bottom: 6px;
     letter-spacing: 2px;
   }
   #login-panel .subtitle {
-    color: rgba(255,255,255,0.35);
+    color: rgba(180,140,150,0.7);
     font-size: 13px;
     margin-bottom: 36px;
   }
   #login-panel input {
     width: 100%;
     padding: 14px 20px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(252,228,236,0.4);
+    border: 1px solid rgba(244,143,177,0.2);
     border-radius: 12px;
-    color: #e0e0ff;
+    color: #6d4c5e;
     font-size: 16px;
     outline: none;
     transition: border-color 0.3s, box-shadow 0.3s;
   }
   #login-panel input:focus {
-    border-color: rgba(100,120,255,0.5);
-    box-shadow: 0 0 0 3px rgba(100,120,255,0.1);
+    border-color: rgba(244,143,177,0.5);
+    box-shadow: 0 0 0 3px rgba(244,143,177,0.12);
+    background: rgba(252,228,236,0.6);
   }
-  #login-panel input::placeholder { color: rgba(255,255,255,0.25); }
+  #login-panel input::placeholder { color: rgba(180,140,150,0.4); }
 
   /* 密码框 */
   .psk-wrap { position: relative; margin-top: 12px; }
   .psk-wrap input {
     width: 100%;
     padding: 14px 48px 14px 20px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(252,228,236,0.4);
+    border: 1px solid rgba(244,143,177,0.2);
     border-radius: 12px;
-    color: #e0e0ff;
+    color: #6d4c5e;
     font-size: 16px;
     outline: none;
     transition: border-color 0.3s, box-shadow 0.3s;
   }
   .psk-wrap input:focus {
-    border-color: rgba(100,120,255,0.5);
-    box-shadow: 0 0 0 3px rgba(100,120,255,0.1);
+    border-color: rgba(244,143,177,0.5);
+    box-shadow: 0 0 0 3px rgba(244,143,177,0.12);
+    background: rgba(252,228,236,0.6);
   }
-  .psk-wrap input::placeholder { color: rgba(255,255,255,0.25); }
+  .psk-wrap input::placeholder { color: rgba(180,140,150,0.4); }
   .psk-toggle {
     position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
-    background: none; border: none; color: rgba(255,255,255,0.3);
+    background: none; border: none; color: rgba(180,140,150,0.5);
     cursor: pointer; font-size: 18px; width: auto; margin: 0; padding: 4px 8px;
     box-shadow: none;
   }
-  .psk-toggle:hover { color: rgba(255,255,255,0.6); box-shadow: none; transform: translateY(-50%); }
+  .psk-toggle:hover { color: rgba(180,140,150,0.8); box-shadow: none; transform: translateY(-50%); }
 
   /* 登录/注册切换 */
   .mode-switch {
     display: flex; margin: 16px 0 4px;
-    background: rgba(255,255,255,0.04); border-radius: 10px; overflow: hidden;
+    background: rgba(252,228,236,0.3); border-radius: 10px; overflow: hidden;
   }
   .mode-switch span {
     flex: 1; padding: 10px 0; font-size: 14px;
-    color: rgba(255,255,255,0.35); cursor: pointer;
+    color: rgba(180,140,150,0.5); cursor: pointer;
     transition: all 0.3s; text-align: center;
   }
   .mode-switch span.active {
-    background: linear-gradient(135deg, rgba(99,102,241,0.6), rgba(139,92,246,0.5));
+    background: linear-gradient(135deg, rgba(244,143,177,0.7), rgba(233,30,99,0.5));
     color: #fff; font-weight: 600;
   }
 
@@ -116,7 +147,7 @@
     width: 100%;
     margin-top: 20px;
     padding: 14px;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    background: linear-gradient(135deg, #f48fb1, #f06292);
     border: none;
     border-radius: 12px;
     color: #fff;
@@ -127,11 +158,11 @@
   }
   #login-panel button:hover {
     transform: translateY(-1px);
-    box-shadow: 0 8px 24px rgba(99,102,241,0.35);
+    box-shadow: 0 8px 24px rgba(244,143,177,0.35);
   }
   #login-panel button:active { transform: scale(0.97); }
 
-  /* ========== 聊天主容器 ========== */
+  /* ========== 聊天主容器 — 马卡龙风格 ========== */
   #chat-container {
     display: none;
     position: relative; z-index: 1;
@@ -139,33 +170,33 @@
     max-width: 100%;
     height: 92vh;
     max-height: 760px;
-    background: rgba(22,22,46,0.82);
-    backdrop-filter: blur(24px);
-    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,253,250,0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(244,143,177,0.2);
     border-radius: 24px;
-    box-shadow: 0 32px 64px rgba(0,0,0,0.4);
+    box-shadow: 0 24px 56px rgba(244,143,177,0.12), 0 4px 16px rgba(0,0,0,0.04);
     overflow: hidden;
     flex-direction: column;
   }
   #chat-container.active { display: flex; }
 
-  /* ========== 顶部栏 ========== */
+  /* ========== 顶部栏 — 马卡龙淡粉 ========== */
   #top-bar {
     display: flex; align-items: center; justify-content: space-between;
     padding: 16px 24px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid rgba(244,143,177,0.12);
+    background: rgba(252,228,236,0.3);
   }
-  #top-bar .room-name { color: #e0e0ff; font-size: 18px; font-weight: 600; letter-spacing: 1px; }
+  #top-bar .room-name { color: #d4687c; font-size: 18px; font-weight: 600; letter-spacing: 1px; }
   #top-bar .status {
     display: flex; align-items: center; gap: 8px;
-    color: rgba(255,255,255,0.45); font-size: 13px;
+    color: rgba(160,130,140,0.7); font-size: 13px;
   }
   #top-bar .status .dot {
     width: 8px; height: 8px;
     border-radius: 50%;
-    background: #22c55e;
-    box-shadow: 0 0 8px #22c55e;
+    background: #81c784;
+    box-shadow: 0 0 8px rgba(129,199,132,0.5);
     animation: pulse-dot 2s infinite;
   }
   @keyframes pulse-dot {
@@ -184,11 +215,11 @@
   #messages::-webkit-scrollbar { width: 5px; }
   #messages::-webkit-scrollbar-track { background: transparent; }
   #messages::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.08);
+    background: rgba(244,143,177,0.12);
     border-radius: 8px;
   }
 
-  /* 消息气泡 */
+  /* 消息气泡 — 马卡龙色系 */
   .msg {
     display: flex; flex-direction: column;
     max-width: 72%;
@@ -202,7 +233,7 @@
   .msg.other { align-self: flex-start; }
 
   .msg .sender {
-    font-size: 12px; color: rgba(255,255,255,0.35);
+    font-size: 12px; color: rgba(160,130,140,0.65);
     margin-bottom: 3px; padding: 0 12px;
   }
   .msg.self .sender { text-align: right; }
@@ -213,58 +244,59 @@
     font-size: 15px;
     line-height: 1.55;
     word-break: break-word;
-    color: #e8e8f0;
+    color: #5d4e5a;
   }
   .msg.self .bubble {
-    background: linear-gradient(135deg, #6366f1, #7c3aed);
+    background: linear-gradient(135deg, #fce4ec, #f8bbd0);
     border-bottom-right-radius: 4px;
-    box-shadow: 0 4px 16px rgba(99,102,241,0.25);
+    box-shadow: 0 2px 10px rgba(244,143,177,0.15);
   }
   .msg.other .bubble {
-    background: linear-gradient(135deg, #8b5cf6, #6366f1);
+    background: linear-gradient(135deg, #ede7f6, #d1c4e9);
     border-bottom-left-radius: 4px;
-    box-shadow: 0 4px 16px rgba(139,92,246,0.25);
+    box-shadow: 0 2px 10px rgba(179,157,219,0.15);
   }
 
-  /* 系统消息 */
+  /* 系统消息 — 马卡龙 */
   .sys-msg {
     align-self: center;
     padding: 6px 18px;
-    background: rgba(255,255,255,0.04);
+    background: rgba(252,228,236,0.4);
     border-radius: 20px;
     font-size: 12px;
-    color: rgba(255,255,255,0.35);
+    color: rgba(160,130,140,0.7);
     animation: fadeUp 0.3s ease;
   }
-  .sys-msg.join { color: rgba(34,197,94,0.6); }
-  .sys-msg.leave { color: rgba(239,68,68,0.55); }
+  .sys-msg.join { color: #81c784; }
+  .sys-msg.leave { color: #ef9a9a; }
 
-  /* ========== 底部输入区 ========== */
+  /* ========== 底部输入区 — 马卡龙淡粉 ========== */
   #input-area {
     display: flex; align-items: center; gap: 12px;
     padding: 16px 24px;
-    border-top: 1px solid rgba(139,92,246,0.15);
-    background: rgba(99,102,241,0.04);
+    border-top: 1px solid rgba(244,143,177,0.15);
+    background: rgba(252,228,236,0.3);
   }
   #input-area input {
     flex: 1;
     padding: 12px 18px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.7);
+    border: 1px solid rgba(244,143,177,0.18);
     border-radius: 14px;
-    color: #e0e0ff;
+    color: #5d4e5a;
     font-size: 15px;
     outline: none;
     transition: border-color 0.3s, box-shadow 0.3s;
   }
   #input-area input:focus {
-    border-color: rgba(100,120,255,0.45);
-    box-shadow: 0 0 0 3px rgba(100,120,255,0.08);
+    border-color: rgba(244,143,177,0.45);
+    box-shadow: 0 0 0 3px rgba(244,143,177,0.1);
+    background: rgba(255,255,255,0.9);
   }
-  #input-area input::placeholder { color: rgba(255,255,255,0.25); }
+  #input-area input::placeholder { color: rgba(180,140,150,0.4); }
   #input-area button {
     width: 48px; height: 48px;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    background: linear-gradient(135deg, #f48fb1, #f06292);
     border: none; border-radius: 14px;
     color: #fff; font-size: 20px;
     cursor: pointer;
@@ -274,22 +306,22 @@
   }
   #input-area button:hover {
     transform: scale(1.05);
-    box-shadow: 0 8px 28px rgba(139,92,246,0.4);
+    box-shadow: 0 8px 28px rgba(244,143,177,0.35);
   }
   #input-area button:active { transform: scale(0.94); }
   #input-area button svg { width: 22px; height: 22px; fill: #fff; }
 
-  /* 表情按钮 */
+  /* 表情按钮 — 马卡龙 */
   #emoji-btn {
-    background: rgba(255,255,255,0.05) !important;
+    background: rgba(255,255,255,0.6) !important;
     font-size: 22px;
     line-height: 1;
   }
   #emoji-btn:hover {
-    background: rgba(255,255,255,0.1) !important;
+    background: rgba(255,255,255,0.85) !important;
   }
 
-  /* ========== 表情选择器 ========== */
+  /* ========== 表情选择器 — 马卡龙 ========== */
   #emoji-picker {
     display: none;
     position: absolute;
@@ -297,11 +329,11 @@
     left: 24px;
     width: 360px;
     max-width: calc(100% - 48px);
-    background: rgba(22,22,50,0.95);
+    background: rgba(255,253,250,0.97);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(244,143,177,0.2);
     border-radius: 18px;
-    box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+    box-shadow: 0 12px 40px rgba(244,143,177,0.15), 0 4px 12px rgba(0,0,0,0.06);
     z-index: 10;
     overflow: hidden;
     animation: emojiSlideUp 0.25s ease;
@@ -318,7 +350,7 @@
     overflow-x: auto;
     padding: 10px 8px 6px;
     gap: 2px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
+    border-bottom: 1px solid rgba(244,143,177,0.1);
     scrollbar-width: none;
   }
   .emoji-cats::-webkit-scrollbar { display: none; }
@@ -332,12 +364,12 @@
     transition: background 0.2s;
     background: transparent;
     border: none;
-    color: rgba(255,255,255,0.5);
+    color: rgba(160,130,140,0.6);
   }
-  .emoji-cat:hover { background: rgba(255,255,255,0.08); }
+  .emoji-cat:hover { background: rgba(244,143,177,0.08); }
   .emoji-cat.active {
-    background: rgba(99,102,241,0.3);
-    color: #fff;
+    background: rgba(244,143,177,0.25);
+    color: #d4687c;
   }
 
   /* 表情网格 */
@@ -349,7 +381,7 @@
   .emoji-grid-wrap::-webkit-scrollbar { width: 4px; }
   .emoji-grid-wrap::-webkit-scrollbar-track { background: transparent; }
   .emoji-grid-wrap::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.08);
+    background: rgba(244,143,177,0.12);
     border-radius: 8px;
   }
   .emoji-grid {
@@ -371,7 +403,7 @@
     line-height: 1;
   }
   .emoji-item:hover {
-    background: rgba(255,255,255,0.1);
+    background: rgba(244,143,177,0.1);
     transform: scale(1.3);
   }
   .emoji-item:active { transform: scale(0.9); }
@@ -380,7 +412,7 @@
   .emoji-section-title {
     grid-column: 1 / -1;
     font-size: 11px;
-    color: rgba(255,255,255,0.3);
+    color: rgba(160,130,140,0.5);
     padding: 8px 6px 4px;
     text-align: left;
   }
@@ -394,6 +426,7 @@
     line-height: 1.2;
     padding: 4px 0;
     letter-spacing: 4px;
+    color: #5d4e5a;
   }
 
   /* ========== 响应式 ========== */
@@ -409,12 +442,24 @@
     }
     .emoji-grid { grid-template-columns: repeat(7, 1fr); }
     .msg.emoji-only .bubble { font-size: 32px; }
+    .mooncat-deco { opacity: 0.2; }
+    .mooncat-deco.left, .mooncat-deco.right {
+      width: 100px; height: 100px;
+    }
   }
 </style>
 </head>
 <body>
 
 <!-- 登录面板 -->
+<!-- ========== 月薪喵装饰 ========== -->
+<div class="mooncat-deco left">
+  <img src="mooncat_bg_slow.gif" alt="月薪喵">
+</div>
+<div class="mooncat-deco right">
+  <img src="mooncat_bg_slow.gif" alt="月薪喵">
+</div>
+
 <div id="login-panel">
   <h1>net_chat</h1>
   <p class="subtitle">基于 C 语言 TCP + select 的聊天室</p>

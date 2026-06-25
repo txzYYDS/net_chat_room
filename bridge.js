@@ -1,7 +1,8 @@
 /*
- * net_chat Web 桥接层 v8
+ * net_chat Web 桥接层 v10
  *
  * 浏览器 ←WebSocket→ bridge.js ←TCP→ C 服务端
+ * 用户数据 → users.json（JSON 文件，零依赖）
  *
  * 用法: node bridge.js
  * 浏览器: http://localhost:3000
@@ -19,6 +20,41 @@ var crypto = require('crypto');
 var WEB_PORT  = 3000;
 var CHAT_HOST = '127.0.0.1';
 var CHAT_PORT = 8888;
+var DB_PATH   = path.join(__dirname, 'users.json');
+
+// ==================== JSON 文件用户存储（零依赖）====================
+// users.json 格式: { "用户名": { "hash":"...", "salt":"...", "created":"..." }, ... }
+function loadUsers() {
+  try {
+    var raw = fs.readFileSync(DB_PATH, 'utf8');
+    return JSON.parse(raw);
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveUsers(users) {
+  fs.writeFileSync(DB_PATH, JSON.stringify(users, null, 2), 'utf8');
+}
+
+var users = loadUsers();
+console.log('[db] ✓ 已加载用户数据 (' + Object.keys(users).length + ' 位用户)');
+
+// ==================== 密码哈希 ====================
+var SALT_ROUNDS = 10000;
+var KEY_LEN     = 64;
+var DIGEST      = 'sha512';
+
+function hashPassword(password, salt) {
+  if (!salt) salt = crypto.randomBytes(16).toString('hex');
+  var hash = crypto.pbkdf2Sync(password, salt, SALT_ROUNDS, KEY_LEN, DIGEST).toString('hex');
+  return { hash: hash, salt: salt };
+}
+
+function verifyPassword(password, hash, salt) {
+  var result = hashPassword(password, salt);
+  return result.hash === hash;
+}
 
 // ==================== MIME ====================
 var MIME = {
@@ -59,7 +95,6 @@ function Client(wsSocket) {
 var clients = [];
 
 // ==================== WebSocket 握手 ====================
-// 正确拼写：Sec-WebSocket-Accept（Accept 末尾有 t）
 server.on('upgrade', function (req, socket) {
   var key = req.headers['sec-websocket-key'];
   if (!key) { socket.destroy(); return; }
@@ -69,7 +104,6 @@ server.on('upgrade', function (req, socket) {
     .update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')
     .digest('base64');
 
-  // 正确的握手响应头
   var response =
     'HTTP/1.1 101 Switching Protocols\r\n' +
     'Upgrade: websocket\r\n' +
@@ -185,6 +219,53 @@ function sendFrame(client, text, opcode) {
   }
 }
 
+// ==================== 连接 C 服务端 ====================
+function connectToChat(client) {
+  client.chat = new net.Socket();
+
+  client.chat.on('data', function (buf) {
+    var text = buf.toString('utf8');
+    var lines = text.split(/\r?\n/);
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim();
+      if (!line) continue;
+      console.log('[bridge] C→浏览器:', line.substring(0, 60));
+      if (client.ws && !client.ws.destroyed) {
+        sendFrame(client, JSON.stringify({ type: 'msg', text: line }));
+      }
+    }
+  });
+
+  client.chat.on('close', function () {
+    console.log('[bridge] ✗ C 服务端 TCP 关闭');
+    if (client.ws && !client.ws.destroyed) {
+      sendFrame(client, JSON.stringify({
+        type: 'system', text: '与聊天室的连接已断开'
+      }));
+    }
+  });
+
+  client.chat.on('error', function (err) {
+    console.error('[bridge] ✗ TCP 错误:', err.code, err.message);
+    if (client.ws && !client.ws.destroyed) {
+      sendFrame(client, JSON.stringify({
+        type: 'error',
+        text: '无法连接 C 服务端：' + err.message
+      }));
+    }
+  });
+
+  client.chat.connect(CHAT_PORT, CHAT_HOST, function () {
+    console.log('[bridge] ✓ TCP 已连到 C 服务端');
+    client.chat.write(client.name + '\n');
+    client.chat.write(client.psk  + '\n');
+    sendFrame(client, JSON.stringify({
+      type: 'joined',
+      text: '欢迎进入聊天室！'
+    }));
+  });
+}
+
 // ==================== 处理浏览器消息 ====================
 function onWsData(client, data) {
   var msg = parseFrame(client, data);
@@ -196,69 +277,74 @@ function onWsData(client, data) {
     var obj = JSON.parse(msg);
 
     if (obj.type === 'join') {
-      // 用户加入 — 提取用户名和密码
       client.name = String(obj.name || '匿名用户').substring(0, 16);
       client.psk  = String(obj.psk  || '').substring(0, 31);
       var isRegister = obj.register === true;
       var action = isRegister ? '注册' : '登录';
-      console.log('[bridge] 「' + client.name + '」正在' + action + ' (psk:' + (client.psk ? '***' : '无') + ')');
 
-      client.chat = new net.Socket();
+      // 密码不能为空
+      if (!client.psk) {
+        console.log('[bridge] ✗ 密码为空，拒绝' + action);
+        sendFrame(client, JSON.stringify({
+          type: 'error',
+          text: isRegister ? '请设置密码' : '请输入密码'
+        }));
+        return;
+      }
 
-      // 先注册事件，再 connect
-      client.chat.on('data', function (buf) {
-        var text = buf.toString('utf8');
-        var lines = text.split(/\r?\n/);
-        for (var i = 0; i < lines.length; i++) {
-          var line = lines[i].trim();
-          if (!line) continue;
-          console.log('[bridge] C→浏览器:', line.substring(0, 60));
-          if (client.ws && !client.ws.destroyed) {
-            sendFrame(client, JSON.stringify({ type: 'msg', text: line }));
-          }
-        }
-      });
+      var existing = users[client.name] || null;
 
-      client.chat.on('close', function () {
-        console.log('[bridge] ✗ C 服务端 TCP 关闭');
-        if (client.ws && !client.ws.destroyed) {
-          sendFrame(client, JSON.stringify({
-            type: 'system', text: '与聊天室的连接已断开'
-          }));
-        }
-      });
-
-      client.chat.on('error', function (err) {
-        console.error('[bridge] ✗ TCP 错误:', err.code, err.message);
-        if (client.ws && !client.ws.destroyed) {
+      if (isRegister) {
+        // ===== 注册 =====
+        if (existing) {
+          console.log('[db] ✗ 注册失败：用户名「' + client.name + '」已存在');
           sendFrame(client, JSON.stringify({
             type: 'error',
-            text: '无法连接 C 服务端：' + err.message
+            text: '用户名「' + client.name + '」已被占用，请换一个'
           }));
+          return;
         }
-      });
 
-      client.chat.connect(CHAT_PORT, CHAT_HOST, function () {
-        console.log('[bridge] ✓ TCP 已连到 C 服务端');
+        var result = hashPassword(client.psk);
+        users[client.name] = {
+          hash: result.hash,
+          salt: result.salt,
+          created: new Date().toISOString().replace('T', ' ').substring(0, 19)
+        };
+        saveUsers(users);
+        console.log('[db] ✓ 注册成功：「' + client.name + '」');
 
-        // 先发用户名，再发密码
-        client.chat.write(client.name + '\n');
-        client.chat.write(client.psk  + '\n');
+        connectToChat(client);
 
-        // 通知浏览器登录成功
-        sendFrame(client, JSON.stringify({
-          type: 'joined',
-          text: '欢迎进入聊天室！'
-        }));
-      });
+      } else {
+        // ===== 登录 =====
+        if (!existing) {
+          console.log('[db] ✗ 登录失败：用户「' + client.name + '」不存在');
+          sendFrame(client, JSON.stringify({
+            type: 'error',
+            text: '用户「' + client.name + '」不存在，请先注册'
+          }));
+          return;
+        }
+
+        if (!verifyPassword(client.psk, existing.hash, existing.salt)) {
+          console.log('[db] ✗ 登录失败：密码错误');
+          sendFrame(client, JSON.stringify({
+            type: 'error',
+            text: '密码错误，请重试'
+          }));
+          return;
+        }
+
+        console.log('[db] ✓ 登录成功：「' + client.name + '」');
+        connectToChat(client);
+      }
 
     } else if (obj.type === 'msg') {
-      // 聊天消息
       if (client.chat && !client.chat.destroyed && client.chat.writable) {
         var line = '[' + client.name + ']: ' + obj.text + '\r\n';
         client.chat.write(line);
 
-        // 回显给自己
         sendFrame(client, JSON.stringify({
           type: 'msg',
           from: 'me',
@@ -288,7 +374,7 @@ function onClientClose(client) {
 server.listen(WEB_PORT, function () {
   console.log('');
   console.log('======================================================');
-  console.log('  net_chat 聊天室 — Web 桥接层 v8');
+  console.log('  net_chat 聊天室 — Web 桥接层 v10');
   console.log('======================================================');
   console.log('  C 服务端  ← TCP :' + CHAT_PORT + ' →  bridge');
   console.log('  bridge     ← WS  :' + WEB_PORT + ' →  浏览器');
