@@ -120,7 +120,6 @@ int main() {
 		struct client_info *new_client = (struct client_info *)malloc(sizeof(*new_client));
 		new_client->fd = client_fd;
 		new_client->name[0] = '\0';//名字未设置
-		new_client->psk[0]  = '\0';//密码未设置
 
 			//添加到管理链表
 			if(0 > client_add_manager(new_client,manager)) {
@@ -177,15 +176,7 @@ int main() {
 					buffer[len] = '\0';
 					strncpy(client->name, buffer, sizeof(client->name)-1);
 					client->name[sizeof(client->name)-1] = '\0';
-					printf("用户 [%s] 已连接，等待密码...\r\n", client->name);
-				} else if(client->psk[0] == '\0') {
-					// 第二条消息 → 当作用户密码，去掉末尾\r\n
-					int len = bytes;
-					while(len > 0 && (buffer[len-1] == '\r' || buffer[len-1] == '\n')) len--;
-					buffer[len] = '\0';
-					strncpy(client->psk, buffer, sizeof(client->psk)-1);
-					client->psk[sizeof(client->psk)-1] = '\0';
-					printf("用户 [%s] 登录成功\r\n", client->name);
+					printf("用户 [%s] 已连接\r\n", client->name);
 
 					// 广播新用户加入
 					char join_info[96];

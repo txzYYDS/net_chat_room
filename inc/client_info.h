@@ -3,12 +3,9 @@
 
 #include "list.h"
 
-#define PSK_SIZE 32
-
 //客户信息
 struct client_info {
 	char name[50];
-	char psk[PSK_SIZE];
 	int fd;
 	struct list_entry entry;//侵入式链表
 };
