@@ -70,6 +70,48 @@
     box-shadow: 0 0 0 3px rgba(100,120,255,0.1);
   }
   #login-panel input::placeholder { color: rgba(255,255,255,0.25); }
+
+  /* 密码框 */
+  .psk-wrap { position: relative; margin-top: 12px; }
+  .psk-wrap input {
+    width: 100%;
+    padding: 14px 48px 14px 20px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    color: #e0e0ff;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  .psk-wrap input:focus {
+    border-color: rgba(100,120,255,0.5);
+    box-shadow: 0 0 0 3px rgba(100,120,255,0.1);
+  }
+  .psk-wrap input::placeholder { color: rgba(255,255,255,0.25); }
+  .psk-toggle {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: rgba(255,255,255,0.3);
+    cursor: pointer; font-size: 18px; width: auto; margin: 0; padding: 4px 8px;
+    box-shadow: none;
+  }
+  .psk-toggle:hover { color: rgba(255,255,255,0.6); box-shadow: none; transform: translateY(-50%); }
+
+  /* 登录/注册切换 */
+  .mode-switch {
+    display: flex; margin: 16px 0 4px;
+    background: rgba(255,255,255,0.04); border-radius: 10px; overflow: hidden;
+  }
+  .mode-switch span {
+    flex: 1; padding: 10px 0; font-size: 14px;
+    color: rgba(255,255,255,0.35); cursor: pointer;
+    transition: all 0.3s; text-align: center;
+  }
+  .mode-switch span.active {
+    background: linear-gradient(135deg, rgba(99,102,241,0.6), rgba(139,92,246,0.5));
+    color: #fff; font-weight: 600;
+  }
+
   #login-panel button {
     width: 100%;
     margin-top: 20px;
@@ -252,7 +294,18 @@
 <div id="login-panel">
   <h1>net_chat</h1>
   <p class="subtitle">基于 C 语言 TCP + select 的聊天室</p>
+
+  <!-- 登录 / 注册切换 -->
+  <div class="mode-switch">
+    <span id="mode-login" class="active" onclick="switchMode('login')">登录</span>
+    <span id="mode-register" onclick="switchMode('register')">注册</span>
+  </div>
+
   <input id="name-input" type="text" placeholder="起个名字吧…" maxlength="16" autofocus>
+  <div class="psk-wrap">
+    <input id="psk-input" type="password" placeholder="输入密码" maxlength="32">
+    <span class="psk-toggle" onclick="togglePsk()" title="显示/隐藏密码">👁</span>
+  </div>
   <button id="join-btn" onclick="doJoin()">进入聊天室</button>
 </div>
 
@@ -276,19 +329,49 @@
 <script>
   let ws = null;
   let myName = '';
+  let myMode = 'login'; // 'login' | 'register'
+
+  // ========== 模式切换 ==========
+  function switchMode(mode) {
+    myMode = mode;
+    document.getElementById('mode-login').classList.toggle('active', mode === 'login');
+    document.getElementById('mode-register').classList.toggle('active', mode === 'register');
+    document.getElementById('join-btn').textContent = mode === 'login' ? '登录聊天室' : '注册并进入';
+    document.getElementById('psk-input').placeholder = mode === 'login' ? '请输入登录密码' : '请设置密码（至少4位）';
+  }
+
+  function togglePsk() {
+    var inp = document.getElementById('psk-input');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  }
 
   // ========== 加入 ==========
   function doJoin() {
     const inp = document.getElementById('name-input');
+    const pskInp = document.getElementById('psk-input');
     myName = inp.value.trim() || '路人' + Math.floor(Math.random() * 900 + 100);
+
+    // 简单校验：注册时密码至少4位
+    var password = pskInp.value.trim();
+    if (myMode === 'register' && password.length < 4) {
+      addSystemBanner('密码至少需要 4 位', 'leave');
+      return;
+    }
+
     inp.disabled = true;
+    pskInp.disabled = true;
 
     // 连接 bridge
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
     ws = new WebSocket(proto + '://' + location.host);
 
     ws.onopen = () => {
-      ws.send(JSON.stringify({ type: 'join', name: myName }));
+      ws.send(JSON.stringify({
+        type: 'join',
+        name: myName,
+        psk: password,
+        register: myMode === 'register'
+      }));
     };
 
     ws.onmessage = (e) => onMessage(e.data);
@@ -308,6 +391,16 @@
     document.getElementById('msg-input').focus();
 
     addSystem('正在连接聊天室……', 'join');
+  }
+
+  // ========== 单条系统消息（登录面板） ==========
+  function addSystemBanner(text, cls) {
+    const box = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.className = 'sys-msg ' + (cls || '');
+    div.textContent = text;
+    box.appendChild(div);
+    setTimeout(() => div.remove(), 3000);
   }
 
   // ========== 接收消息 ==========

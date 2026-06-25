@@ -134,7 +134,7 @@ sudo ufw allow 8888/tcp   # C 服务端端口（TCP 直连用）
 
 | type | 方向 | 说明 |
 |------|------|------|
-| `join` | 浏览器 → bridge | `{ type:"join", name:"张三" }` 加入聊天室 |
+| `join` | 浏览器 → bridge | `{ type:"join", name:"张三", psk:"123456", register:false }` 登录/注册 |
 | `joined` | bridge → 浏览器 | `{ type:"joined", text:"欢迎..." }` 加入成功 |
 | `msg` | 浏览器 → bridge | `{ type:"msg", text:"你好" }` 发送消息 |
 | `msg` | bridge → 浏览器 | `{ type:"msg", text:"[张三]: 你好" }` 收到消息 |
@@ -144,13 +144,15 @@ sudo ufw allow 8888/tcp   # C 服务端端口（TCP 直连用）
 ### bridge.js ↔ C 服务端（TCP 明文）
 
 ```
-# 加入时，bridge 发送用户名（以 \n 结尾）
+# 加入时，bridge 先发用户名，再发密码（各自以 \n 结尾）
 bridge → C:  "张三\n"
+bridge → C:  "123456\n"
 
 # 聊天时，bridge 转发消息（以 \r\n 结尾）
 bridge → C:  "[张三]: 你好\r\n"
 
 # C 服务端广播消息（以 \r\n 结尾）
+C → bridge:  "用户 张三 加入了聊天室\r\n"
 C → bridge:  "[张三]: 你好\r\n"
 ```
 
@@ -165,9 +167,12 @@ main()
   ├── listen()          开始监听
   └── while(1)
         └── select()    多路复用，监听所有 fd
-              ├── 新连接 → accept() → 加入链表
-              ├── 客户端断开 → 从链表移除
-              └── 收到消息 → 遍历链表广播
+              ├── 新连接 → accept() → 加入链表 → 发送欢迎
+              ├── 客户端消息处理（三级状态机）：
+              │     ① name 为空 → 收用户名
+              │     ② psk  为空 → 收密码 → 登录成功 → 广播加入
+              │     ③ 都已设置 → 聊天消息 → 遍历链表广播
+              └── 客户端断开 → 从链表移除 → 广播离开
 ```
 
 **链表结构：**
@@ -179,7 +184,8 @@ struct manager_device {        // 客户端管理器
 
 struct client_info {           // 单个客户端
     int fd;                  // 套接字 fd
-    char name[32];           // 用户名
+    char name[50];           // 用户名
+    char psk[32];            // 用户密码
     struct list_entry entry;  // 链表节点
 };
 ```
@@ -198,6 +204,7 @@ struct client_info {           // 单个客户端
 
 ## 已知问题 / TODO
 
+- [x] ~~用户密码登录~~（2025-06-25 已完成：psk 字段 + 三级状态机登录流程）
 - [ ] `net_chat_client.c` 尚未实现（可编写 ncurses 终端 UI 客户端）
 - [ ] bridge.js 的 WebSocket 帧解析不支持超过 64KB 的大帧
 - [ ] C 服务端的 `manager->head` 内存分配后未释放（程序退出时系统回收）

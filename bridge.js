@@ -52,6 +52,7 @@ function Client(wsSocket) {
   this.ws   = wsSocket;
   this.chat = null;
   this.name = '';
+  this.psk  = '';
   this.buf  = Buffer.alloc(0);
 }
 
@@ -195,9 +196,12 @@ function onWsData(client, data) {
     var obj = JSON.parse(msg);
 
     if (obj.type === 'join') {
-      // 用户加入
+      // 用户加入 — 提取用户名和密码
       client.name = String(obj.name || '匿名用户').substring(0, 16);
-      console.log('[bridge] 「' + client.name + '」正在连接 C 服务端...');
+      client.psk  = String(obj.psk  || '').substring(0, 31);
+      var isRegister = obj.register === true;
+      var action = isRegister ? '注册' : '登录';
+      console.log('[bridge] 「' + client.name + '」正在' + action + ' (psk:' + (client.psk ? '***' : '无') + ')');
 
       client.chat = new net.Socket();
 
@@ -237,10 +241,11 @@ function onWsData(client, data) {
       client.chat.connect(CHAT_PORT, CHAT_HOST, function () {
         console.log('[bridge] ✓ TCP 已连到 C 服务端');
 
-        // 发送用户名（C 服务端按 \n 分割读取）
+        // 先发用户名，再发密码
         client.chat.write(client.name + '\n');
+        client.chat.write(client.psk  + '\n');
 
-        // 通知浏览器加入成功
+        // 通知浏览器登录成功
         sendFrame(client, JSON.stringify({
           type: 'joined',
           text: '欢迎进入聊天室！'
