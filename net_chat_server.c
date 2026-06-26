@@ -19,6 +19,9 @@
  * */
 int main() {
 
+	// 关闭 stdout 缓冲，确保日志实时写入
+	setbuf(stdout, NULL);
+
 	int server_fd;//服务端套接字
 	int client_fd;//客户端套接字
        	int max_fd;//io端口复用最大的描述

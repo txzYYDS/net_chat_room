@@ -1,2 +1,4 @@
 /build
 users.json
+.run.pid
+/logs
